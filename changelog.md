@@ -1,3 +1,6 @@
+## 8.6.2
+* Made `QuickMoveHandler` respect `Slot#mayPickup` and call `Slot#onTake` when a slot is updated.
+
 ## 8.6.1
 * Added `speed` param to `GradientColor`.
 
