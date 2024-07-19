@@ -8,7 +8,9 @@ import dev.shadowsoffire.placebo.patreon.WingsManager;
 import dev.shadowsoffire.placebo.patreon.wings.Wing;
 import dev.shadowsoffire.placebo.patreon.wings.WingLayer;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
@@ -48,11 +50,11 @@ public class PlaceboClient {
         e.registerReloadListener((ResourceManagerReloadListener) res -> NeoForge.EVENT_BUS.post(new ResourceReloadEvent(res, LogicalSide.CLIENT)));
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SubscribeEvent
     public static void addLayers(AddLayers e) {
         Wing.INSTANCE = new Wing(e.getEntityModels().bakeLayer(WingsManager.WING_LOC));
         for (PlayerSkin.Model s : e.getSkins()) {
-            LivingEntityRenderer skin = e.getSkin(s);
+            LivingEntityRenderer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> skin = e.getSkin(s);
             skin.addLayer(new WingLayer(skin));
         }
     }
