@@ -1,3 +1,6 @@
+## 9.3.4
+* Fixed supporter wings not rendering.
+
 ## 9.3.3
 * Made `DynamicRegistry#beginReload` and `DynamicRegistry#onReload` called on SSP hosts with the original registry data.
   * This fixes a bug where json brewing mixes were not being populated to JEI.
