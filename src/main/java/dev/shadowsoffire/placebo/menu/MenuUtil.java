@@ -33,7 +33,7 @@ public class MenuUtil {
      * Util method for the most common type of {@link IContainerFactory} - one supplying a {@link BlockPos}.
      */
     public static <T extends AbstractContainerMenu> MenuType<T> posType(PosFactory<T> factory) {
-        return new MenuType<>(factory(factory), FeatureFlags.DEFAULT_FLAGS);
+        return new MenuType<>(factory, FeatureFlags.DEFAULT_FLAGS);
     }
 
     /**
@@ -44,13 +44,6 @@ public class MenuUtil {
         if (player.level().isClientSide) return InteractionResult.SUCCESS;
         player.openMenu(new SimplerMenuProvider<>(player.level(), pos, factory), pos);
         return InteractionResult.CONSUME;
-    }
-
-    /**
-     * Conversion helper that allows using {@link PosFactory} as a lambda to create an {@link IContainerFactory}.
-     */
-    public static <T extends AbstractContainerMenu> IContainerFactory<T> factory(PosFactory<T> factory) {
-        return factory;
     }
 
     @FunctionalInterface
