@@ -288,9 +288,13 @@ public class DeferredHelper {
 
     /**
      * Registers a {@link RecipeType} using {@link RecipeType#simple(ResourceLocation)}.
+     * <p>
+     * Immediately constructs the {@link RecipeType} and returns it. Registration is deferred until the appropriate time.
      */
-    public <C extends RecipeInput, U extends Recipe<C>> DeferredHolder<RecipeType<?>, RecipeType<U>> recipe(String path) {
-        return this.recipe(path, () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(this.modid, path)));
+    public <C extends RecipeInput, U extends Recipe<C>> RecipeType<U> recipe(String path) {
+        RecipeType<U> type = RecipeType.simple(ResourceLocation.fromNamespaceAndPath(this.modid, path));
+        this.recipe(path, () -> type);
+        return type;
     }
 
     /**
@@ -352,16 +356,24 @@ public class DeferredHelper {
 
     /**
      * Registers an {@linkplain DataComponentType enchantment effect component} that is configured with the supplied operator.
+     * <p>
+     * Immediately constructs the {@link DataComponentType} and returns it. Registration is deferred until the appropriate time.
      */
-    public <T> DeferredHolder<DataComponentType<?>, DataComponentType<T>> enchantmentEffect(String path, UnaryOperator<DataComponentType.Builder<T>> operator) {
-        return this.registerDH(path, Registries.ENCHANTMENT_EFFECT_COMPONENT_TYPE, () -> operator.apply(DataComponentType.builder()).build());
+    public <T> DataComponentType<T> enchantmentEffect(String path, UnaryOperator<DataComponentType.Builder<T>> operator) {
+        DataComponentType<T> type = operator.apply(DataComponentType.builder()).build();
+        this.register(path, Registries.ENCHANTMENT_EFFECT_COMPONENT_TYPE, () -> type);
+        return type;
     }
 
     /**
      * Registers a {@link DataComponentType} that is configured with the supplied operator.
+     * <p>
+     * Immediately constructs the {@link DataComponentType} and returns it. Registration is deferred until the appropriate time.
      */
-    public <T> DeferredHolder<DataComponentType<?>, DataComponentType<T>> component(String path, UnaryOperator<DataComponentType.Builder<T>> operator) {
-        return this.registerDH(path, Registries.DATA_COMPONENT_TYPE, () -> operator.apply(DataComponentType.builder()).build());
+    public <T> DataComponentType<T> component(String path, UnaryOperator<DataComponentType.Builder<T>> operator) {
+        DataComponentType<T> type = operator.apply(DataComponentType.builder()).build();
+        this.register(path, Registries.DATA_COMPONENT_TYPE, () -> type);
+        return type;
     }
 
     /**
