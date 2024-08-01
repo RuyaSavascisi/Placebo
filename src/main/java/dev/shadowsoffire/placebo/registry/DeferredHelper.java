@@ -6,6 +6,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -44,6 +45,7 @@ import net.minecraft.world.entity.ai.attributes.RangedAttribute;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.MenuType.MenuSupplier;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.alchemy.Potion;
@@ -136,6 +138,27 @@ public class DeferredHelper {
      */
     public <T extends Item> DeferredItem<T> item(String path, Function<Item.Properties, T> ctor) {
         return item(path, ctor, UnaryOperator.identity());
+    }
+
+    /**
+     * Registers a subclass of {@link BlockItem} given a target block, the constructor, and an {@link Item.Properties} factory.
+     */
+    public <T extends BlockItem> DeferredItem<T> blockItem(String path, Holder<Block> block, BiFunction<Block, Item.Properties, T> ctor, UnaryOperator<Item.Properties> properties) {
+        return item(path, () -> ctor.apply(block.value(), properties.apply(new Item.Properties())));
+    }
+
+    /**
+     * Registers a {@link BlockItem} given a target block and an {@link Item.Properties} factory.
+     */
+    public DeferredItem<BlockItem> blockItem(String path, Holder<Block> block, UnaryOperator<Item.Properties> properties) {
+        return blockItem(path, block, BlockItem::new, properties);
+    }
+
+    /**
+     * Registers a {@link BlockItem} given a target block, using a default {@link Item.Properties} instance.
+     */
+    public DeferredItem<BlockItem> blockItem(String path, Holder<Block> block) {
+        return blockItem(path, block, UnaryOperator.identity());
     }
 
     /**
