@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 
 import org.jetbrains.annotations.ApiStatus;
 
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.level.ItemLike;
@@ -77,6 +78,14 @@ public class TabFillingRegistry {
     @SafeVarargs
     public static void register(ResourceKey<CreativeModeTab> tab, Supplier<? extends ItemLike>... items) {
         for (var item : items) registerInternal(tab, ITabFiller.delegating(item));
+    }
+
+    /**
+     * Overload of {@link #register(ResourceKey, Supplier...)} which accepts holders.
+     */
+    @SafeVarargs
+    public static void register(ResourceKey<CreativeModeTab> tab, Holder<? extends ItemLike>... items) {
+        for (var item : items) registerInternal(tab, ITabFiller.delegating(item::value));
     }
 
     @ApiStatus.Internal
