@@ -1,3 +1,9 @@
+## 9.3.5
+* Expanded `DeferredHelper` to cover various common cases without resorting to usage of the supplier overloads.
+* Documented all methods of `DeferredHelper`.
+* Made immediately-resolvable types (i.e. data component types) bypass uses of `DeferredHolder` when using `DeferredHelper`.
+* Gave `ITabFiller` access to the full `BuildCreativeModeTabContentsEvent` for use with data registries.
+
 ## 9.3.4
 * Fixed supporter wings not rendering.
 
