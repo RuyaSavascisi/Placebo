@@ -233,6 +233,14 @@ tasks.named("generateModMetadata") {
     }
 }
 
+tasks.named('processResources') {
+    dependsOn generateModMetadata
+}
+
+tasks.withType(Jar) {
+    dependsOn generateModMetadata
+}
+
 sourceSets.main.resources {
     srcDir 'src/generated/resources'
     srcDir 'src/templates'
@@ -255,6 +263,9 @@ tasks.named('jar', Jar).configure {
             "MixinConfigs": project.mixin.toBoolean() ? "${modid}.mixins.json" : ""
         ])
     }
+    exclude 'neoforge.mods.toml'
+    exclude 'mixins.json'
+    exclude 'coremods.json'
 }
 
 java {
