@@ -1,3 +1,7 @@
+## 9.4.0
+* Updated to 1.21.1.
+* Buildscript now uses ModDevGradle.
+
 ## 9.3.5
 * Expanded `DeferredHelper` to cover various common cases without resorting to usage of the supplier overloads.
 * Documented all methods of `DeferredHelper`.
