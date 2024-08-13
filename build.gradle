@@ -12,6 +12,58 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(project.properties.javaVersion)
 
+// Forward declaration of generateModMetadata for use in the neoForge block. Definition is below.
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {}
+
+neoForge {
+    version = project.properties.forgeVersion
+
+    parchment {
+        def split = "${parchmentVersion}".split('-')
+        minecraftVersion = split[1]
+        mappingsVersion = split[0]
+    }
+
+    mods {
+        create(project.name) {
+            sourceSet project.sourceSets.main
+        }
+    }
+
+    runs {
+        configureEach {
+            logLevel = org.slf4j.event.Level.DEBUG
+            taskBefore generateModMetadata
+        }
+
+        client {
+            client()
+            systemProperty 'forge.enabledGameTestNamespaces', "${modid}"
+            ideName = "${project.name} - Client"
+        }
+
+        server {
+            server()
+            systemProperty 'forge.enabledGameTestNamespaces', "${modid}"
+            programArgument '--nogui'
+            ideName = "${project.name} - Server"
+        }
+
+        data {
+            data()
+            programArguments.addAll '--mod', "${modid}", '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+            ideName = "${project.name} - Data"
+        }
+    }
+
+    ideSyncTask generateModMetadata
+
+    neoFormRuntime {
+        useEclipseCompiler = true // Allows for parallelism on recompile
+        version = "1.0.3"
+    }
+}
+
 repositories {
     maven {
         // CurseForge
@@ -50,25 +102,26 @@ repositories {
         url "https://maven.shadowsoffire.dev/releases"
         content {
             includeGroup "dev.shadowsoffire"
+            includeGroup "snownee.jade"
         }
     }
 }
 
 dependencies {
-    if(project.mixin.toBoolean())                   annotationProcessor "org.spongepowered:mixin:${mixinVersion}:processor"
-    if(project.hasProperty('placeboVersion'))       implementation "dev.shadowsoffire:Placebo:${mcVersion}-${placeboVersion}"
-    if(project.hasProperty('jeiVersion'))           implementation "mezz.jei:jei-${mcVersion}-neoforge:${jeiVersion}"
-    if(project.hasProperty('jadeFileId'))           implementation "curse.maven:jade-324717:${jadeFileId}"
-    if(project.hasProperty('curiosVersion'))        implementation "top.theillusivec4.curios:curios-neoforge:${curiosVersion}"
-    if(project.hasProperty('patchouliVersion'))     implementation "vazkii.patchouli:Patchouli:${patchouliVersion}"
-    if(project.hasProperty('bookshelfVersion'))     compileOnly    "net.darkhax.bookshelf:Bookshelf-Forge-${mcVersion}:${bookshelfVersion}"
-    if(project.hasProperty('gamestagesVersion'))    compileOnly    "net.darkhax.gamestages:GameStages-Forge-${mcVersion}:${gamestagesVersion}"
-    if(project.hasProperty('twilightFileId'))       implementation "curse.maven:the-twilight-forest-227639:${twilightFileId}"
-    if(project.hasProperty('gatewaysVersion'))      implementation "dev.shadowsoffire:GatewaysToEternity:${mcVersion}-${gatewaysVersion}"
-    if(project.hasProperty('attributeslibVersion')) implementation "dev.shadowsoffire:ApothicAttributes:${mcVersion}-${attributeslibVersion}"
+    if (project.mixin.toBoolean())                   annotationProcessor "org.spongepowered:mixin:${mixinVersion}:processor"
+    if (project.hasProperty('placeboVersion'))       implementation "dev.shadowsoffire:Placebo:${mcVersion}-${placeboVersion}"
+    if (project.hasProperty('jeiVersion'))           implementation "mezz.jei:jei-${mcVersion}-neoforge:${jeiVersion}"
+    if (project.hasProperty('jadeVersion'))          implementation "snownee.jade:Jade-NeoForge:${mcVersion}-${jadeVersion}"
+    if (project.hasProperty('curiosVersion'))        implementation "top.theillusivec4.curios:curios-neoforge:${curiosVersion}"
+    if (project.hasProperty('patchouliVersion'))     implementation "vazkii.patchouli:Patchouli:${patchouliVersion}"
+    if (project.hasProperty('bookshelfVersion'))     compileOnly    "net.darkhax.bookshelf:Bookshelf-Forge-${mcVersion}:${bookshelfVersion}"
+    if (project.hasProperty('gamestagesVersion'))    compileOnly    "net.darkhax.gamestages:GameStages-Forge-${mcVersion}:${gamestagesVersion}"
+    if (project.hasProperty('twilightFileId'))       implementation "curse.maven:the-twilight-forest-227639:${twilightFileId}"
+    if (project.hasProperty('gatewaysVersion'))      implementation "dev.shadowsoffire:GatewaysToEternity:${mcVersion}-${gatewaysVersion}"
+    if (project.hasProperty('attributeslibVersion')) implementation "dev.shadowsoffire:ApothicAttributes:${mcVersion}-${attributeslibVersion}"
 }
 
-var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+tasks.named("generateModMetadata") {
     def replaceProperties = [
         modGroup: modGroup,
         modid: modid,
@@ -97,15 +150,12 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
 
     inputs.properties replaceProperties
 
-    def resourceTargets = [
-        'META-INF/neoforge.mods.toml'
-    ]
-    
-    from("src/metadata")
-    into("build/generated/metadata")
+    from("src/templates")
+    into("src/generated/resources")
 
-    filesMatching(resourceTargets) {
+    filesMatching('neoforge.mods.toml') {
         expand replaceProperties
+        name 'META-INF/neoforge.mods.toml'
     }
 
     // Automatically populate mixins.json from the mixin package and rename to modid.mixins.json
@@ -156,7 +206,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
     }
 
     // Automatically populate coremods.json file from existing coremod js files in /coremods
-    filesMatching('META-INF/coremods.json') {
+    filesMatching('coremods.json') {
         def names = []
         fileTree("${project.projectDir}/src/main/resources/coremods").visit { FileVisitDetails details ->
             def name = details.file.path.replace('\\', '/')
@@ -179,60 +229,17 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
         replaceProperties.put('coremods', coremods)
 
         expand replaceProperties
-    }
-}
-
-neoForge {
-    version = project.properties.forgeVersion
-
-    parchment {
-        def split = "${parchmentVersion}".split('-')
-        minecraftVersion = split[1]
-        mappingsVersion = split[0]
-    }
-
-    mods {
-        create(project.name) {
-            sourceSet project.sourceSets.main
-        }
-    }
-
-    runs {
-        configureEach {
-            logLevel = org.slf4j.event.Level.DEBUG
-            taskBefore generateModMetadata
-        }
-
-        client {
-            client()
-            systemProperty 'forge.enabledGameTestNamespaces', "${modid}"
-            ideName = "${project.name} - Client"
-        }
-
-        server {
-            server()
-            systemProperty 'forge.enabledGameTestNamespaces', "${modid}"
-            programArgument '--nogui'
-            ideName = "${project.name} - Server"
-        }
-
-        data {
-            data()
-            programArguments.addAll '--mod', "${modid}", '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-            ideName = "${project.name} - Data"
-        }
-    }
-
-    ideSyncTask generateModMetadata
-
-    neoFormRuntime {
-        useEclipseCompiler = true // Allows for parallelism on recompile
+        name 'META-INF/coremods.json'
     }
 }
 
 sourceSets.main.resources {
     srcDir 'src/generated/resources'
-	srcDir generateModMetadata
+    srcDir 'src/templates'
+}
+
+if (!project.enableTests.toBoolean()) {
+    sourceSets.remove(sourceSets.test)
 }
 
 tasks.named('jar', Jar).configure {
@@ -252,7 +259,6 @@ tasks.named('jar', Jar).configure {
 
 java {
     withSourcesJar()
-    // withJavadocJar()
 }
 
 publishing {
@@ -324,7 +330,6 @@ tasks.register('publishCurseForge', net.darkhax.curseforgegradle.TaskPublishCurs
         mainFile.addModLoader(splitList("${modLoaders}"))
         mainFile.addJavaVersion("Java ${javaVersion}")
         mainFile.addGameVersion("${mcVersion}")
-		mainFile.addModLoader("NeoForge")
         mainFile.releaseType = "${releaseType}"        
     
         if (project.hasProperty('requiredDeps')) {
