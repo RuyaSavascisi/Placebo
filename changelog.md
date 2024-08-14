@@ -1,3 +1,6 @@
+## 9.4.1
+* Fixed a dependency configuration issue.
+
 ## 9.4.0
 * Updated to 1.21.1.
 * Buildscript now uses ModDevGradle.
