@@ -81,6 +81,8 @@ public abstract class DynamicRegistry<R extends CodecProvider<? super R>> extend
 
     /**
      * Map of all holders that have ever been requested for this registry.
+     * <p>
+     * TODO: Reduce scope of DynamicHolder from ? extends R to strictly R, same as vanilla Holders.
      */
     private final Map<ResourceLocation, DynamicHolder<? extends R>> holders = new ConcurrentHashMap<>();
 
@@ -229,7 +231,10 @@ public abstract class DynamicRegistry<R extends CodecProvider<? super R>> extend
      * @return A dynamic registry object pointing to the target value.
      */
     @SuppressWarnings("unchecked")
-    public <T extends R> DynamicHolder<T> holder(ResourceLocation id) {
+    public <T extends R> DynamicHolder<T> holder(@Nullable ResourceLocation id) {
+        if (id == null) {
+            return (DynamicHolder<T>) this.emptyHolder();
+        }
         return (DynamicHolder<T>) this.holders.computeIfAbsent(id, k -> new DynamicHolder<>(this, k));
     }
 
