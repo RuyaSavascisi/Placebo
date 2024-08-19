@@ -13,6 +13,8 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import org.jetbrains.annotations.ApiStatus;
+
 import com.mojang.serialization.MapCodec;
 
 import dev.shadowsoffire.placebo.Placebo;
@@ -83,6 +85,7 @@ public class DeferredHelper {
 
     protected final String modid;
     protected final Map<ResourceKey<? extends Registry<?>>, List<Registrar<?>>> objects;
+    protected final Map<ResourceKey<? extends Registry<?>>, List<Holder<?>>> resolvedObjects;
 
     /**
      * Creates a new DeferredHelper. DeferredHelpers must be registered to the mod event bus via {@link IEventBus#register}
@@ -97,6 +100,7 @@ public class DeferredHelper {
     protected DeferredHelper(String modid) {
         this.modid = modid;
         this.objects = new IdentityHashMap<>();
+        this.resolvedObjects = new IdentityHashMap<>();
     }
 
     /**
@@ -435,6 +439,17 @@ public class DeferredHelper {
     }
 
     /**
+     * Returns a list of all objects for a given registry that were registered by this {@link DeferredHelper}.
+     * <p>
+     * If registration for the target registry has not happened yet, this list will be empty.
+     */
+    @ApiStatus.Experimental
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public <R> List<Holder<R>> getRegisteredObjects(ResourceKey<? extends Registry<R>> key) {
+        return (List) Collections.unmodifiableList(this.resolvedObjects.getOrDefault(key, List.of()));
+    }
+
+    /**
      * Stages the supplier for registration without creating a {@link DeferredHolder}.
      */
     protected <R, T extends R> void register(String path, ResourceKey<Registry<R>> regKey, Supplier<T> factory) {
@@ -457,7 +472,9 @@ public class DeferredHelper {
         Registry registry = e.getRegistry();
         for (Registrar<?> registrar : this.objects.getOrDefault(e.getRegistryKey(), Collections.emptyList())) {
             try {
-                Registry.register(registry, registrar.id, registrar.factory.get());
+                Object obj = registrar.factory.get();
+                Registry.register(registry, registrar.id, obj);
+                this.resolvedObjects.computeIfAbsent(e.getRegistryKey(), k -> new ArrayList<>()).add(registry.wrapAsHolder(obj));
             }
             catch (Throwable ex) {
                 Placebo.LOGGER.error("Exception thrown during registration of {}", registrar.id);
