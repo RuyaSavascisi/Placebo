@@ -1,6 +1,7 @@
 package dev.shadowsoffire.placebo.registry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import com.mojang.serialization.MapCodec;
 
@@ -19,6 +21,7 @@ import dev.shadowsoffire.placebo.block_entity.TickingBlockEntityType;
 import dev.shadowsoffire.placebo.block_entity.TickingBlockEntityType.TickSide;
 import dev.shadowsoffire.placebo.menu.MenuUtil;
 import dev.shadowsoffire.placebo.menu.MenuUtil.PosFactory;
+import dev.shadowsoffire.placebo.util.DeferredSet;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
@@ -231,11 +234,36 @@ public class DeferredHelper {
     }
 
     /**
-     * Registers a {@link TickingBlockEntityType} for a {@link TickingBlockEntity} given the {@link BlockEntitySupplier}, a supplier to
-     * the set of valid blocks, and the target {@link TickSide}.
+     * Registers a {@link BlockEntityType} given the {@link BlockEntitySupplier} and a vararg array of valid blocks.
+     * <p>
+     * Immediately constructs the {@link BlockEntityType} and returns it. Registration is deferred until the appropriate time. The set of valid blocks will not
+     * attempt to be resolved until registration.
      */
-    public <T extends BlockEntity & TickingBlockEntity> DeferredHolder<BlockEntityType<?>, TickingBlockEntityType<T>> tickingBlockEntity(String path, BlockEntitySupplier<T> factory, Supplier<Set<Block>> validBlocks, TickSide side) {
-        return this.registerDH(path, Registries.BLOCK_ENTITY_TYPE, () -> new TickingBlockEntityType<T>(factory, validBlocks.get(), side));
+    @SafeVarargs
+    public final <T extends BlockEntity> BlockEntityType<T> blockEntity(String path, BlockEntitySupplier<T> factory, Holder<Block>... validBlocks) {
+        BlockEntityType<T> type = new BlockEntityType<>(factory, new DeferredSet<>(() -> Arrays.stream(validBlocks).map(Holder::value).collect(Collectors.toSet())), null);
+        this.register(path, Registries.BLOCK_ENTITY_TYPE, () -> {
+            type.getValidBlocks(); // Force resolution of the DeferredSet during registration
+            return type;
+        });
+        return type;
+    }
+
+    /**
+     * Registers a {@link TickingBlockEntityType} for a {@link TickingBlockEntity} given the {@link BlockEntitySupplier}, the target {@link TickSide}, and a vararg
+     * array of valid blocks.
+     * <p>
+     * Immediately constructs the {@link BlockEntityType} and returns it. Registration is deferred until the appropriate time. The set of valid blocks will not
+     * attempt to be resolved until registration.
+     */
+    @SafeVarargs
+    public final <T extends BlockEntity & TickingBlockEntity> TickingBlockEntityType<T> tickingBlockEntity(String path, BlockEntitySupplier<T> factory, TickSide side, Holder<Block>... validBlocks) {
+        TickingBlockEntityType<T> type = new TickingBlockEntityType<>(factory, new DeferredSet<>(() -> Arrays.stream(validBlocks).map(Holder::value).collect(Collectors.toSet())), side);
+        this.register(path, Registries.BLOCK_ENTITY_TYPE, () -> {
+            type.getValidBlocks(); // Force resolution of the DeferredSet during registration
+            return type;
+        });
+        return type;
     }
 
     /**
